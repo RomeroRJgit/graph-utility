@@ -2,10 +2,17 @@ import random
 
 
 class Node:
-    def __init__(self, val=()):
+    def __init__(self, key, val=None):
+        if val is None:
+            val = {}
+        self.data = (key, val)
         self.left = None
         self.right = None
-        self.data = val
+        self.parent = None
+        self.sibling = None
+        self.index = 0
+        self.depth = 0
+        self.isSuccessor = False
 
 
 def compare_nodes(a, b):
@@ -28,21 +35,24 @@ class Tree:
         self.__inorder_traversal(parent.right, traversal)
 
     def preorder_route(self, parent=None, nth=0, level=0):
-        traversal = [self.root]
+        traversal = []
         parent = self.root if parent is None else parent
 
-        self.__preorder_route(parent, traversal, nth, level)
-
+        traversal = self.__preorder_route(parent, traversal, nth, level)
         return traversal
 
-    def __preorder_route(self, parent, traversal, nth=0, level=0):
+    def __preorder_route(self, parent, traversal, index=0, level=0):
         if parent is None:
-            return
+            return traversal
 
-        traversal.append((parent, nth, level))
+        traversal.append((parent, index, level))
+        parent.index = index
+        parent.level = level
 
-        self.__preorder_route(parent.left, traversal, nth - 1, level - 1)
-        self.__preorder_route(parent.right, traversal, nth + 1, level - 1)
+        self.__preorder_route(parent.left, traversal, index - 1, level + 1)
+        self.__preorder_route(parent.right, traversal, index + 1, level + 1)
+
+        return traversal
 
 
     def get_min(self, parent):
@@ -69,6 +79,9 @@ class Tree:
     def has_inner_children(self, node):
         return ((node.left and node.left.right) and (node.right and node.right.left)) is not None
 
+    def is_inner(self, node):
+        return node.parent and (node.parent.left is not None and node.parent.right is not None)
+
 
 class BST(Tree):
     def __init__(self):
@@ -83,31 +96,39 @@ class BST(Tree):
 
     def randomize(self, node_count=10, value_range=(0, 100)):
         for n in range(node_count):
-            self.insert(random.Random().randint(value_range[0], value_range[1]), value="random")
+            self.insert(random.Random().randint(value_range[0], value_range[1]))
 
     def insert(self, key: int, value=None):
-        #print((key, value))
+        if value is None:
+            value = {}
+
+        #print(f"Inserting: {(key, value)}")
 
         return self.__insert(self.root, (key, value))
 
-    def __insert(self, parent, val):
+    def __insert(self, parent, data=(-1, {})):
         if parent is None:
-            parent = Node(val)
-            parent.data = val
+            parent = Node(data[0], val=data[1])
             if self.root is None:
                 self.root = parent
-                #print(f"Root: {parent.data}")
+                print(f"Root: {parent.data}")
             return parent
 
-        if compare_nodes(val[0], parent.data[0]) < 0:
-            left = self.__insert(parent.left, val)
+        if compare_nodes(data[0], parent.data[0]) < 0:
+            left = self.__insert(parent.left, data)
             if parent.left is None:
                 parent.left = left
-                # print(f"Left: {val} < {parent.data}")
-                return left
-        elif compare_nodes(val[0], parent.data[0]) > 0:
-            right = self.__insert(parent.right, val)
+                print(f"Left: {data[0]} < {parent.data[0]}")
+                parent.left.parent = parent
+                if parent.right:
+                    parent.left.sibling = parent.right
+            return parent.left
+        elif compare_nodes(data[0], parent.data[0]) > 0:
+            right = self.__insert(parent.right, data)
             if parent.right is None:
+                print(f"Right: {data[0]} > {parent.data[0]}")
                 parent.right = right
-                # print(f"Right: {val} > {parent.data}")
-                return right
+                parent.right.parent = parent
+                if parent.left:
+                    parent.right.sibling = parent.left
+            return parent.right

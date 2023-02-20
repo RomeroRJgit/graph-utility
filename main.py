@@ -1,6 +1,5 @@
 import random
 from tkinter import *
-from turtle import *
 from tkinter import ttk
 import tree
 
@@ -10,189 +9,186 @@ from page import Page
 
 
 class NodeShape:
-    shape = 'circle'
-    size = 25
+    size = 60
+    border_width = 4
+    fill_color = '#a96945'
+    selected_color = '#C57945'
+    border_color = '#332928'
+    text_color = '#454142'
+    padding = (size * 1.5, size * 1.5)
 
-    def __init__(self, node=None, xy=(0, 0)):
+    def __init__(self, node):
         self.node = node if node is not None else None
+        self.pos = (0, 0)
+        self.key = node.data[0]
         self.selected = False
-        self.xy = (xy[0], xy[1])
+        self.color = self.fill_color
+        self.shape_id = -1
+        self.text_id = -1
+        self.parent_edge = None
 
-    def select(self):
-        self.selected = True
-
-    def deselect(self):
-        self.selected = False
-
-
-class Drawer(RawTurtle):
-    def __init__(self, turtle_canvas):
-        super().__init__(turtle_canvas)
-        self.speed(0)
-        self.width(3)
-        self.getscreen().delay(0)
-        self.fillcolor(theme.mg_color)
-        self.pencolor(theme.fg_color)
-        self.shape('circle')
-        self.shapesize(0.5)
-        self.up()
-        self.center = (0, -275)
-        self.goto_center()
-
-    def goto_center(self):
-        self.goto(self.pos()[0] - self.center[0], self.pos()[1] - self.center[1])
-
-    def jump(self, pos=(0, 0)):
-        self.up()
-        self.goto((pos[0] - self.center[0], pos[1] - self.center[1]))
-
-    def draw_abs(self, pos=(0, 0), action=None):
-        self.jump((pos[0], pos[1]))
-        self.down()
-        action()
-        self.up()
-
-    def draw_rel(self, xoffset=0.0, yoffset=0.0, action=None):
-        self.draw_abs(pos=(self.xcor() + xoffset + self.center[0], self.ycor() - yoffset + self.center[1]),
-                      action=action)
-
-    def draw_line(self, start=(0, 0), end=(0, 0)):
-        # print(f"Start: {start}, End: {end}")
-        self.draw_abs(pos=(start[0], start[1]),
-                      action=lambda: self.goto(end[0] - self.center[0], end[1] - self.center[1]))
-
-    def paste(self, val=""):
-        self.draw_rel(xoffset=2, yoffset=-NodeShape.size / 2 - 1,
-                      action=lambda: self.write(val, font=('Courier', 20, 'bold'), align='center'))
-
-    def draw_node(self, parent=None, val=None, pos=()):
-        child_pos = (pos[0], pos[1])
-
-        self.draw_abs(pos=(child_pos[0], child_pos[1]),
-                      action=lambda: self.draw_circle(NodeShape.size))
-        if val is not None:
-            self.draw_abs(pos=child_pos, action=lambda: self.paste(val))
-        return NodeShape(xy=(child_pos[0], child_pos[1]))
-
-    def draw_edge(self, parent=None, child=None):
-        child_pos = (child.xy[0], child.xy[1])
-        parent_pos = (parent.xy[0], parent.xy[1])
-
-        pencil.draw_line((child_pos[0], child_pos[1]), (parent_pos[0], parent_pos[1]))
-
-    def draw_circle(self, size):
-        self.begin_fill()
-        self.circle(size, steps=75)
-        self.end_fill()
+    def update(self):
+        if self.selected:
+            self.color = self.selected_color
 
 
-def draw_bst(root):
+class EdgeShape:
+    width = 4
+    color = '#694925'
+
+    def __init__(self, child):
+        self.child = child
+
+class GraphPainter:
+    def __init__(self, canvas):
+        self.canvas = canvas
+        self.offset = 0, 220
+        self.center = canvas_width / 2 - NodeShape.size * 1.5, canvas_height / 2 - self.offset[1] - NodeShape.size * 1.5
+        self.nodes = []
+
+    def draw_node(self, node, parent=None):
+        node.data[1]['shape'] = NodeShape(node)
+        node.data[1]['shape'].pos = node_pos = self.get_graph_pos(node)
+        print(binary_search_tree.is_inner(node))
+
+        xoffset = 0
+        if node.data[0] < binary_search_tree.root.data[0]:
+            xoffset = -1
+        else:
+            xoffset = 1
+        xoffset = 0
+        xoffset = xoffset * NodeShape.size * 2
+
+        node.shape_id = self.canvas.create_oval(node_pos[0] + xoffset + NodeShape.size, node_pos[1] + NodeShape.size, node_pos[0] + xoffset, node_pos[1],
+                                    tag='node', fill=node.data[1]['shape'].color, width=NodeShape.border_width,
+                                    outline=NodeShape.border_color)
+        self.nodes.append(node.shape_id)
+        #canvas.addtag('selected', 'withtag', 'node')
+
+        node.text_id = self.canvas.create_text(node_pos[0] + xoffset + NodeShape.size / 2, node_pos[1] + NodeShape.size / 2, tag='value', text=node.data[0], font=(theme.font, 16, 'normal'), fill=NodeShape.text_color)
+        canvas.tag_bind('node', '<Button-1>', lambda e, obj=node: self.test(obj))
+        return node.data[1]['shape']
+
+    def test(self, node):
+        print(node)
+        print(node.data[1]['shape'])
+        print(node.data[1]['shape'].color)
+        node.data[1]['shape'].color = 'red'
+        node.data[1]['shape'].update()
+        self.update_graph(binary_search_tree)
+    def erase_node(self, node):
+        self.canvas.delete(node.shape_id)
+        self.canvas.delete(node.text_id)
+
+    def connect_node(self, child, parent):
+        child_pos = child.data[1]['shape'].pos
+        parent_pos = parent.data[1]['shape'].pos
+
+        xoffset = 0
+        if child.data[0] < binary_search_tree.root.data[0]:
+            xoffset = -1
+        else:
+            xoffset = 1
+        xoffset = 0
+        xoffset = xoffset * NodeShape.size * 2
+
+        self.canvas.create_line(child_pos[0] + xoffset + NodeShape.size / 2, child_pos[1] - (NodeShape.border_width - 1), parent_pos[0] + xoffset + NodeShape.size / 2, parent_pos[1] + NodeShape.size + (NodeShape.border_width - 1), width=EdgeShape.width, fill=EdgeShape.color)
+
+    def draw_edge(self, start=(0, 0), end=(0, 0)):
+        start_pos = self.get_pos_offset(start)
+        end_pos = self.get_pos_offset(end)
+        self.canvas.create_line(start_pos[0], start_pos[1], end_pos[0], end_pos[1])
+
+    def get_pos_offset(self, pos=()):
+        return pos.xy[0] - self.center[0], pos.xy[1] - self.center[1]
+
+    def get_graph_pos(self, node):
+        x_translation = node.index * NodeShape.padding[0] + NodeShape.size
+        y_translation = node.level * NodeShape.padding[1] + NodeShape.size
+
+        return x_translation + self.center[0], y_translation + self.center[1]
+
+    def select_node(self, node):
+        node.selected = True
+        node.update()
+        self.canvas.itemconfig(node, fill='#339933')
+        self.update_graph(binary_search_tree)
+
+    def deselect_node(self, node):
+        node.selected = False
+        node.update()
+        self.canvas.itemconfig(node, fill='#339933')
+
+    def update_graph(self, bst):
+        traversal = bst.preorder_route()
+        for node in traversal[1:]:
+            if node[0].data[1] and type(node[0].data[1]['shape']) is NodeShape:
+                shape = node[0].data[1]['shape']
+                shape.update()
+                self.canvas.itemconfig(shape.shape_id, fill=shape.color)
+
+
+def draw_bst(bst):
+    root_node = bst.root
+
     traversal = bst.preorder_route()
 
-    n = len(traversal)
-    # depth = bst.get_depth(bst.root)
-    padding = (NodeShape.size * 3, NodeShape.size * 4)
-    subtree = 0
-    parent = None
+    last_parent = None
+    for node in traversal:
+        graph_painter.draw_node(node[0])
+        if last_parent:
+            graph_painter.connect_node(node[0], node[0].parent)
 
-    for node in traversal[1:]:
-        if node[0].data < root.data:
-            subtree = -1
-
-        elif node[0].data > root.data:
-            subtree = 1
-
-        if bst.has_inner_children(node[0]):
-            print("Inner children")
-            subtree = subtree * 5
-            print(subtree)
-
-        if parent is None:
-            xnode = node[1] * padding[0] + (subtree * NodeShape.size * n / 5)
-            ynode = node[2] * padding[1] - NodeShape.size * 2
-            parent = pencil.draw_node(val=node[0].data[0],
-                                      pos=(xnode, ynode))
-            if node[0].left:
-                pencil.draw_line((xnode, ynode), (xnode - NodeShape.size * 2.5 * n / 10, ynode - NodeShape.size * 2.25))
-            if node[0].right:
-                pencil.draw_line((xnode, ynode), (xnode + NodeShape.size * 2.5 * n / 10, ynode - NodeShape.size * 2.25))
-        else:
-            xnode = node[1] * padding[0] + (subtree * NodeShape.size * n / 5)
-            ynode = node[2] * padding[1] - NodeShape.size * 2
-
-            if node[0].left:
-                pencil.draw_line((xnode, ynode), (xnode - NodeShape.size * 3, ynode - NodeShape.size * 3.25))
-            if node[0].right:
-                pencil.draw_line((xnode, ynode), (xnode + NodeShape.size * 3, ynode - NodeShape.size * 3.25))
-
-            parent = pencil.draw_node(val=node[0].data[0],
-                                      pos=(xnode,
-                                           ynode))
+        last_parent = node[0]
 
 
-def add_node(insert):
-    insert()
-    pencil.clear()
+def add_node(key):
+    node = binary_search_tree.insert(key)
+    node.data[1]['shape'] = NodeShape(node)
     root.configure(background=theme.bg_color, relief='flat')
-    draw_bst(bst.root)
+    draw_bst(binary_search_tree)
 
 
 class GraphWindow:
     class Main(Page):
 
-        def __init__(self, master=None, theme=None, **kw):
+        def __init__(self, canvas, master=None, theme=None, **kw):
             super().__init__(master, theme=theme, **kw)
-            self.chat_box_text = None
-            self.input_buffer = ""
+            self.canvas = canvas
 
         def create(self):
-            global pencil
-
-            header = ttk.Label(self, text="PySocket")
+            header = ttk.Label(self, text="BST")
             header.configure(style=theme.elements['h1'])
 
             elements_input_frame = ttk.Frame(self, width=50, padding=20)
-            elements_input_frame.configure(style=theme.elements['entry'])
-            elements_entry = themes.EntryXL(elements_input_frame, placeholder='[n...]',
-                                            background='#aaaaaa',
-                                            font=(theme.font, 16))
+            elements_input_frame.configure(style=theme.elements['entry'], padding='20 20')
+            elements_entry = themes.EntryXL(elements_input_frame, placeholder='Enter a comma separated list of numbers',
+                                            background=theme.text_color,
+                                            font=(theme.font, 18))
 
             elements_entry.configure(style=theme.elements['input'])
 
-            send_button = ttk.Button(self, text="BST",
-                                     command=lambda: add_node(
-                                         lambda: bst.insert(int(elements_entry.get_valid_input()[0]),
-                                                            value=NodeShape())),
+            send_button = ttk.Button(self, text="Create",
+                                     command=lambda: add_node(int(elements_entry.get_valid_input()[0])),
                                      takefocus=False)
             send_button.configure(style=theme.elements['button'])
 
-            canvas = Canvas(self, width=window_width, height=window_height)
-            canvas.create_oval(0, 0, 230, 230, fill="#000000")
-            screen = TurtleScreen(canvas)
-            screen.bgcolor(theme.bg_color)
-
-            pencil = Drawer(screen)
-
-            self.pack()
-            canvas.grid()
-            header.grid(column=0, row=0, sticky='n')
-            header.columnconfigure(0, weight=100)
+            self.canvas.configure(background=theme.bg_color, relief='flat')
+            #header.grid(column=0, row=0, sticky='n')
+            #header.columnconfigure(0, weight=100)
             elements_input_frame.grid(column=0, row=2, sticky='nswe')
             elements_entry.grid(column=0, row=2, sticky='nswe')
-            send_button.grid(column=0, row=2, sticky='nse')
-            self.tkraise(canvas)
-            self.pack_forget()
-
-            # canvas = Canvas(root, width=window_width, height=window_height)
-            # node = canvas.create_oval(0, 0, 230, 230, fill='#993333', background='#339933', width=4, outline='#333333')
-            # text = canvas.create_text(node, 115, 115, text="0")
-            #
-            # #canvas.itemconfig(node, fill='#339933')
-            # canvas.pack()
+            send_button.grid(column=1, row=2, sticky='nswe')
+            self.canvas.pack()
+            self.tkraise(self.canvas)
+            self.grid_forget()
 
 
 window_width = 1280
 window_height = 720
+canvas_width = 1280
+canvas_height = 640
+
 root = Tk()
 root.geometry(f"{window_width}x{window_height}")
 
@@ -201,7 +197,8 @@ window = GraphWindow()
 theme = themes.Modern(root)
 root.configure(background=theme.bg_color, relief='flat')
 
-menu = pages['menu'] = window.Main(root, theme=theme, width=window_width, height=window_height)
+canvas = Canvas(root, width=canvas_width, height=canvas_height)
+menu = pages['menu'] = window.Main(canvas, theme=theme, width=window_width, height=window_height)
 pages['menu'].create()
 
 root.columnconfigure(0, weight=1)
@@ -210,13 +207,13 @@ root.rowconfigure(0, weight=1)
 style = theme.get_style()
 style.theme_use(theme.get_name())
 
+graph_painter = GraphPainter(canvas)
 page.open_page(root, menu)
-bst = tree.BST()
-bst.generate([(4, NodeShape().shape), (3, NodeShape().shape), (7, NodeShape().shape), (5, NodeShape().shape)])
-bst.randomize(node_count=40, value_range=(1, 200))
-bst.insert(3, value=NodeShape())
-draw_bst(bst.root)
 
+binary_search_tree = tree.BST()
+#binary_search_tree.generate([(4, NodeShape().shape), (3, NodeShape().shape), (7, NodeShape().shape), (5, NodeShape().shape)])
+binary_search_tree.randomize(node_count=40, value_range=(1, 200))
 
+draw_bst(binary_search_tree)
 
 root.mainloop()
