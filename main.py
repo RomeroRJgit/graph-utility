@@ -12,24 +12,21 @@ class NodeShape:
     size = 60
     border_width = 4
     fill_color = '#a96945'
-    selected_color = '#C57945'
+    selected_color = '#e59965'
     border_color = '#332928'
     text_color = '#454142'
     padding = (size * 1.5, size * 1.5)
 
-    def __init__(self, node):
-        self.node = node if node is not None else None
+    def __init__(self, node, selected=False, color=None, outline=None):
+        self.node = node
         self.pos = (0, 0)
         self.key = node.data[0]
-        self.selected = False
-        self.color = self.fill_color
+        self.selected = selected
+        self.color = self.fill_color if color is None else color
+        self.outline = self.border_color if outline is None else outline
         self.shape_id = -1
         self.text_id = -1
         self.parent_edge = None
-
-    def update(self):
-        if self.selected:
-            self.color = self.selected_color
 
 
 class EdgeShape:
@@ -44,10 +41,9 @@ class GraphPainter:
         self.canvas = canvas
         self.offset = 0, 220
         self.center = canvas_width / 2 - NodeShape.size * 1.5, canvas_height / 2 - self.offset[1] - NodeShape.size * 1.5
-        self.nodes = []
+        self.nodes = {}
 
     def draw_node(self, node, parent=None):
-        node.data[1]['shape'] = NodeShape(node)
         node.data[1]['shape'].pos = node_pos = self.get_graph_pos(node)
         print(binary_search_tree.is_inner(node))
 
@@ -59,23 +55,18 @@ class GraphPainter:
         xoffset = 0
         xoffset = xoffset * NodeShape.size * 2
 
-        node.shape_id = self.canvas.create_oval(node_pos[0] + xoffset + NodeShape.size, node_pos[1] + NodeShape.size, node_pos[0] + xoffset, node_pos[1],
+        node.data[1]['shape'].shape_id = self.canvas.create_oval(node_pos[0] + xoffset + NodeShape.size, node_pos[1] + NodeShape.size, node_pos[0] + xoffset, node_pos[1],
                                     tag='node', fill=node.data[1]['shape'].color, width=NodeShape.border_width,
-                                    outline=NodeShape.border_color)
-        self.nodes.append(node.shape_id)
-        #canvas.addtag('selected', 'withtag', 'node')
+                                    outline=node.data[1]['shape'].outline)
 
-        node.text_id = self.canvas.create_text(node_pos[0] + xoffset + NodeShape.size / 2, node_pos[1] + NodeShape.size / 2, tag='value', text=node.data[0], font=(theme.font, 16, 'normal'), fill=NodeShape.text_color)
-        canvas.tag_bind('node', '<Button-1>', lambda e, obj=node: self.test(obj))
+        self.nodes[node.data[0]] = node.data[1]['shape']
+
+        canvas.addtag_above(node.data[1]['shape'].shape_id, node.data[1]['shape'].shape_id)
+
+        node.text_id = self.canvas.create_text(node_pos[0] + xoffset + NodeShape.size / 2, node_pos[1] + NodeShape.size / 2, tag='value', text=node.data[0], font=(theme.font, 16, 'normal'), state='disabled', fill=NodeShape.text_color)
+        canvas.tag_bind(node.data[1]['shape'].shape_id, '<Button-1>', lambda e, key=node.data[0]: self.select_node(key))
         return node.data[1]['shape']
 
-    def test(self, node):
-        print(node)
-        print(node.data[1]['shape'])
-        print(node.data[1]['shape'].color)
-        node.data[1]['shape'].color = 'red'
-        node.data[1]['shape'].update()
-        self.update_graph(binary_search_tree)
     def erase_node(self, node):
         self.canvas.delete(node.shape_id)
         self.canvas.delete(node.text_id)
@@ -107,17 +98,29 @@ class GraphPainter:
         y_translation = node.level * NodeShape.padding[1] + NodeShape.size
 
         return x_translation + self.center[0], y_translation + self.center[1]
+    def deselect_node(self, key):
+        if key in self.nodes:
+            node_shape = self.nodes[key]
+            node_shape.selected = False
+            self.canvas.itemconfig(node_shape.shape_id, fill=NodeShape.fill_color)
 
-    def select_node(self, node):
-        node.selected = True
-        node.update()
-        self.canvas.itemconfig(node, fill='#339933')
-        self.update_graph(binary_search_tree)
+    def select_node(self, key):
+        if key in self.nodes:
+            node_shape = self.nodes[key]
+            if node_shape.selected:
+                self.deselect_node(key)
+                return
+            
+            node_shape.selected = True
+            self.canvas.itemconfig(node_shape.shape_id, fill=NodeShape.selected_color)
 
-    def deselect_node(self, node):
-        node.selected = False
-        node.update()
-        self.canvas.itemconfig(node, fill='#339933')
+            print(node_shape.node)
+            route = [];
+            binary_search_tree.inorder_traversal(route, parent=node_shape.node)
+            for node in route:
+                print(node[1])
+                self.canvas.move(node[1]['shape'].shape_id, NodeShape.size, 0)
+
 
     def update_graph(self, bst):
         traversal = bst.preorder_route()
@@ -127,7 +130,6 @@ class GraphPainter:
                 shape.update()
                 self.canvas.itemconfig(shape.shape_id, fill=shape.color)
 
-
 def draw_bst(bst):
     root_node = bst.root
 
@@ -135,7 +137,13 @@ def draw_bst(bst):
 
     last_parent = None
     for node in traversal:
+        node[0].data[1]['shape'] = NodeShape(node[0])
+
+        if node[0] is binary_search_tree.root:
+            node[0].data[1]['shape'].outline = '#eededd'
+
         graph_painter.draw_node(node[0])
+
         if last_parent:
             graph_painter.connect_node(node[0], node[0].parent)
 
