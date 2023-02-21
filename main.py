@@ -45,7 +45,7 @@ class GraphPainter:
 
     def draw_node(self, node, parent=None):
         node.data[1]['shape'].pos = node_pos = self.get_graph_pos(node)
-        print(binary_search_tree.is_inner(node))
+
 
         xoffset = 0
         if node.data[0] < binary_search_tree.root.data[0]:
@@ -114,12 +114,37 @@ class GraphPainter:
             node_shape.selected = True
             self.canvas.itemconfig(node_shape.shape_id, fill=NodeShape.selected_color)
 
-            print(node_shape.node)
-            route = [];
+            route = []
             binary_search_tree.inorder_traversal(route, parent=node_shape.node)
             for node in route:
                 print(node[1])
-                self.canvas.move(node[1]['shape'].shape_id, NodeShape.size, 0)
+                #self.canvas.move(node[1]['shape'].shape_id, NodeShape.size, 0)
+
+    def align_nodes(self):
+        route = binary_search_tree.preorder_route()
+        for node in route:
+            print(node[0].data[0])
+            node = node[0]
+            if node.left and node.right:
+                if node.right.left and node.right.left.data is not None:
+                    print(f"left {node.right.left}")
+                    print(f"left {node.right.left.data}")
+                    left = node.right.left
+                    left_shape = self.nodes[left.data[0]]
+                    # self.canvas.itemconfig(left_shape.shape_id, fill='red')
+                    print()
+                    # for i in binary_search_tree.preorder_route(left):
+                    #     self.canvas.move(self.nodes[i[0].data[0]].shape_id, -NodeShape.size * 2, 0)
+                    #return
+                if node.left.right and node.left.right.data is not None:
+                    print(f"right {node.left.right}")
+                    print(f"right {node.left.right.data}")
+                    right = node.left.right
+                    right_shape = self.nodes[right.data[0]]
+                    # self.canvas.itemconfig(right_shape.shape_id, fill='green')
+                    # for i in binary_search_tree.preorder_route(right):
+                    #     self.canvas.move(self.nodes[i[0].data[0]].shape_id, NodeShape.size * 2, 0)
+
 
 
     def update_graph(self, bst):
@@ -148,6 +173,7 @@ def draw_bst(bst):
             graph_painter.connect_node(node[0], node[0].parent)
 
         last_parent = node[0]
+    graph_painter.align_nodes()
 
 
 def add_node(key):
@@ -160,35 +186,44 @@ def add_node(key):
 class GraphWindow:
     class Main(Page):
 
-        def __init__(self, canvas, master=None, theme=None, **kw):
+        def __init__(self, master=None, theme=None, **kw):
             super().__init__(master, theme=theme, **kw)
-            self.canvas = canvas
 
         def create(self):
+            global canvas
             header = ttk.Label(self, text="BST")
             header.configure(style=theme.elements['h1'])
 
-            elements_input_frame = ttk.Frame(self, width=50, padding=20)
-            elements_input_frame.configure(style=theme.elements['entry'], padding='20 20')
-            elements_entry = themes.EntryXL(elements_input_frame, placeholder='Enter a comma separated list of numbers',
-                                            background=theme.text_color,
-                                            font=(theme.font, 18))
+            elements_entry = themes.EntryXL(self, placeholder='     Enter a comma separated list of numbers')
+            elements_entry.configure(style=theme.elements['input'], width=40, font=(theme.font, 16))
 
-            elements_entry.configure(style=theme.elements['input'])
-
-            send_button = ttk.Button(self, text="Create",
+            insert_button = ttk.Button(self, text="Insert",
                                      command=lambda: add_node(int(elements_entry.get_valid_input()[0])),
-                                     takefocus=False)
-            send_button.configure(style=theme.elements['button'])
+                                     takefocus=False, padding='20 20')
+            insert_button.configure(style=theme.elements['button'])
 
-            self.canvas.configure(background=theme.bg_color, relief='flat')
-            #header.grid(column=0, row=0, sticky='n')
-            #header.columnconfigure(0, weight=100)
-            elements_input_frame.grid(column=0, row=2, sticky='nswe')
-            elements_entry.grid(column=0, row=2, sticky='nswe')
-            send_button.grid(column=1, row=2, sticky='nswe')
-            self.canvas.pack()
-            self.tkraise(self.canvas)
+            delete_button = ttk.Button(self, text="Delete",
+                                     command=lambda: add_node(int(elements_entry.get_valid_input()[0])),
+                                     takefocus=False, padding='20 20')
+            delete_button.configure(style=theme.elements['button'])
+
+            search_button = ttk.Button(self, text="Search",
+                                     command=lambda: graph_painter.select_node(int(elements_entry.get_valid_input()[0])),
+                                     takefocus=False, padding='20 20')
+            search_button.configure(style=theme.elements['button'])
+
+            canvas = Canvas(self, width=canvas_width, height=canvas_height)
+
+            canvas.configure(background=theme.bg_color, relief='flat')
+            header.grid(column=0, row=0, sticky='nwse')
+            elements_entry.grid(column=0, row=1, sticky='nwse')
+            insert_button.grid(column=1, row=1, sticky='nwse')
+            delete_button.grid(column=2, row=1, sticky='nwse', padx=10)
+            search_button.grid(column=3, row=1, sticky='nwse', padx=10)
+            canvas.grid(column=0, row=5, sticky='nswe')
+            self.columnconfigure(0, weight=1)
+            self.rowconfigure(0, weight=1)
+            #self.lower(canvas)
             self.grid_forget()
 
 
@@ -205,12 +240,11 @@ window = GraphWindow()
 theme = themes.Modern(root)
 root.configure(background=theme.bg_color, relief='flat')
 
-canvas = Canvas(root, width=canvas_width, height=canvas_height)
-menu = pages['menu'] = window.Main(canvas, theme=theme, width=window_width, height=window_height)
+canvas = None
+menu = pages['menu'] = window.Main(theme=theme, width=window_width, height=window_height)
 pages['menu'].create()
 
 root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
 
 style = theme.get_style()
 style.theme_use(theme.get_name())

@@ -14,7 +14,7 @@ def open_page(root, page):
     for p in pages.values():
         p.pack_forget()
 
-    page.pack()
+    page.grid()
 
     # root.columnconfigure(0, weight=1)
     # root.rowconfigure(0, weight=1)

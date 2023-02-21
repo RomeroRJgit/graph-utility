@@ -31,7 +31,6 @@ class EntryXL(ttk.Entry):
         return self.get()
 
 
-
 class Modern:
     # Fields
     theme_name = 'modern'
@@ -90,7 +89,7 @@ class Modern:
         self.style.configure('p.TLabel', background=self.bg_color, foreground=self.text_color, font=(self.font, 14),
                              relief='flat')
 
-        self.style.configure('input.TLabel', background='#cac5bb', foreground='#999999', font=(self.font, 24),
+        self.style.configure('input.TLabel', background='#cac5bb', foreground='#999999', font=(self.font, 16),
                              relief='flat')
 
         self.style.configure('entry.TFrame', background='#cac5bb', font=(self.font, 24),
