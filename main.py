@@ -150,9 +150,14 @@ class GraphPainter:
                     # for i in binary_search_tree.preorder_route(right):
                     #     self.canvas.move(self.nodes[i[0].data[0]].shape_id, NodeShape.size * 2, 0)
 
+    def remove_node(self, key):
+        binary_search_tree.delete(key.node.data[0])
+        canvas.delete(self.nodes[key.node.data[0]].shape_id)
+
     def remove_selected(self):
+        print(len(self.selected))
         for node in self.selected:
-            remove_node(selected[0])
+            self.remove_node(node)
 
     def update_graph(self, bst):
         traversal = bst.preorder_route()
@@ -189,9 +194,6 @@ def add_node(key):
     root.configure(background=theme.bg_color, relief='flat')
     draw_bst(binary_search_tree)
 
-def remove_node(key):
-    print(key)
-
 
 class GraphWindow:
     class Main(Page):
@@ -218,7 +220,7 @@ class GraphWindow:
             delete_button.configure(style=theme.elements['button'])
 
             search_button = ttk.Button(self, text="Search",
-                                     command=lambda: graph_painter.select_node(int(elements_entry.get_valid_input()[0])),
+                                     command=lambda: graph_painter.select_node(int(elements_entry.get_valid_input())),
                                      takefocus=False, padding='20 20')
             search_button.configure(style=theme.elements['button'])
 
@@ -264,7 +266,7 @@ page.open_page(root, menu)
 
 binary_search_tree = tree.BST()
 #binary_search_tree.generate([(4, NodeShape().shape), (3, NodeShape().shape), (7, NodeShape().shape), (5, NodeShape().shape)])
-#binary_search_tree.randomize(node_count=40, value_range=(1, 200))
+binary_search_tree.randomize(node_count=40, value_range=(1, 200))
 
 draw_bst(binary_search_tree)
 

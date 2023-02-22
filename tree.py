@@ -99,29 +99,31 @@ class BST(Tree):
             self.insert(random.Random().randint(value_range[0], value_range[1]))
 
     def delete(self, key: int):
-        node = search()
+        node = self.search(key)
+        print(f"n: {node}")
 
     def search(self, key: int):
-        __search(self.root, key)
+        return self.__search(self.root, key)
 
-    def __search(self, key: int):
+    def __search(self, node, key: int):
         if key == node.data[0]:
-            print(parent)
-            return parent
+            print(node)
+            return node
 
+        print(key)
+        print(f"?: {node.data[0]}")
         if key < node.data[0]:
-            self.search(node.left, key)
+            self.__search(node.left, key)
         elif key > node.data[0]:
-            self.search(node.right, key)
+            self.__search(node.right, key)
 
-        return found if found else None
+        return node if node else None
 
     def insert(self, key: int, value=None):
         if value is None:
             value = {}
 
         #print(f"Inserting: {(key, value)}")
-
         return self.__insert(self.root, (key, value))
 
     def __insert(self, parent, data=(-1, {})):
