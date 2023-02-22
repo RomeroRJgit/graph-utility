@@ -98,6 +98,24 @@ class BST(Tree):
         for n in range(node_count):
             self.insert(random.Random().randint(value_range[0], value_range[1]))
 
+    def delete(self, key: int):
+        node = search()
+
+    def search(self, key: int):
+        __search(self.root, key)
+
+    def __search(self, key: int):
+        if key == node.data[0]:
+            print(parent)
+            return parent
+
+        if key < node.data[0]:
+            self.search(node.left, key)
+        elif key > node.data[0]:
+            self.search(node.right, key)
+
+        return found if found else None
+
     def insert(self, key: int, value=None):
         if value is None:
             value = {}

@@ -42,6 +42,7 @@ class GraphPainter:
         self.offset = 0, 220
         self.center = canvas_width / 2 - NodeShape.size * 1.5, canvas_height / 2 - self.offset[1] - NodeShape.size * 1.5
         self.nodes = {}
+        self.selected = []
 
     def draw_node(self, node, parent=None):
         node.data[1]['shape'].pos = node_pos = self.get_graph_pos(node)
@@ -98,6 +99,8 @@ class GraphPainter:
         y_translation = node.level * NodeShape.padding[1] + NodeShape.size
 
         return x_translation + self.center[0], y_translation + self.center[1]
+
+
     def deselect_node(self, key):
         if key in self.nodes:
             node_shape = self.nodes[key]
@@ -109,9 +112,11 @@ class GraphPainter:
             node_shape = self.nodes[key]
             if node_shape.selected:
                 self.deselect_node(key)
+                self.selected.remove(self.nodes[key])
                 return
             
             node_shape.selected = True
+            self.selected.append(self.nodes[key])
             self.canvas.itemconfig(node_shape.shape_id, fill=NodeShape.selected_color)
 
             route = []
@@ -145,7 +150,9 @@ class GraphPainter:
                     # for i in binary_search_tree.preorder_route(right):
                     #     self.canvas.move(self.nodes[i[0].data[0]].shape_id, NodeShape.size * 2, 0)
 
-
+    def remove_selected(self):
+        for node in self.selected:
+            remove_node(selected[0])
 
     def update_graph(self, bst):
         traversal = bst.preorder_route()
@@ -182,6 +189,9 @@ def add_node(key):
     root.configure(background=theme.bg_color, relief='flat')
     draw_bst(binary_search_tree)
 
+def remove_node(key):
+    print(key)
+
 
 class GraphWindow:
     class Main(Page):
@@ -198,12 +208,12 @@ class GraphWindow:
             elements_entry.configure(style=theme.elements['input'], width=40, font=(theme.font, 16))
 
             insert_button = ttk.Button(self, text="Insert",
-                                     command=lambda: add_node(int(elements_entry.get_valid_input()[0])),
+                                     command=lambda: add_node(int(elements_entry.get_valid_input())),
                                      takefocus=False, padding='20 20')
             insert_button.configure(style=theme.elements['button'])
 
             delete_button = ttk.Button(self, text="Delete",
-                                     command=lambda: add_node(int(elements_entry.get_valid_input()[0])),
+                                     command=lambda: graph_painter.remove_selected(),
                                      takefocus=False, padding='20 20')
             delete_button.configure(style=theme.elements['button'])
 
@@ -215,12 +225,12 @@ class GraphWindow:
             canvas = Canvas(self, width=canvas_width, height=canvas_height)
 
             canvas.configure(background=theme.bg_color, relief='flat')
-            header.grid(column=0, row=0, sticky='nwse')
-            elements_entry.grid(column=0, row=1, sticky='nwse')
-            insert_button.grid(column=1, row=1, sticky='nwse')
-            delete_button.grid(column=2, row=1, sticky='nwse', padx=10)
-            search_button.grid(column=3, row=1, sticky='nwse', padx=10)
-            canvas.grid(column=0, row=5, sticky='nswe')
+            header.grid(column=0, row=0, sticky='nwse', columnspan=4, pady=20)
+            elements_entry.grid(column=0, row=1, sticky='nse')
+            insert_button.grid(column=0, row=1, sticky='nse', padx='20 0')
+            delete_button.grid(column=2, row=1, sticky='nwse', padx='20 0')
+            search_button.grid(column=3, row=1, sticky='nwse', padx='20 0')
+            canvas.grid(column=0, row=5, sticky='nswe', columnspan=4)
             self.columnconfigure(0, weight=1)
             self.rowconfigure(0, weight=1)
             #self.lower(canvas)
@@ -254,7 +264,7 @@ page.open_page(root, menu)
 
 binary_search_tree = tree.BST()
 #binary_search_tree.generate([(4, NodeShape().shape), (3, NodeShape().shape), (7, NodeShape().shape), (5, NodeShape().shape)])
-binary_search_tree.randomize(node_count=40, value_range=(1, 200))
+#binary_search_tree.randomize(node_count=40, value_range=(1, 200))
 
 draw_bst(binary_search_tree)
 
