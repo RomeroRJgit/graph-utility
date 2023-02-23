@@ -99,19 +99,31 @@ class BST(Tree):
             self.insert(random.Random().randint(value_range[0], value_range[1]))
 
     def delete(self, key: int):
-        node = self.search(key)
-        print(f"n: {node}")
+        print(f"delete: {key}")
+        print(self.__delete(self.root, key))
+
+    def __delete(self, parent, key: int):
+        node = self.__search(parent, key)
+        print(node.data)
+
+        if parent.left is None and parent.right is None:
+            return None
+        elif (parent.left and parent.left is None and parent.right is None) or (parent.right and parent.left is None and parent.right is None):
+            parent = parent.right
+        elif parent.right and parent.right.left:
+            parent = self.get_min(parent.right)
+
+        return parent
+
+
 
     def search(self, key: int):
         return self.__search(self.root, key)
 
     def __search(self, node, key: int):
         if key == node.data[0]:
-            print(node)
             return node
 
-        print(key)
-        print(f"?: {node.data[0]}")
         if key < node.data[0]:
             self.__search(node.left, key)
         elif key > node.data[0]:

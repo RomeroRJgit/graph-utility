@@ -122,28 +122,28 @@ class GraphPainter:
             route = []
             binary_search_tree.inorder_traversal(route, parent=node_shape.node)
             for node in route:
-                print(node[1])
-                #self.canvas.move(node[1]['shape'].shape_id, NodeShape.size, 0)
+                pass
+                # print(node[1])
+                # self.canvas.move(node[1]['shape'].shape_id, NodeShape.size, 0)
 
     def align_nodes(self):
         route = binary_search_tree.preorder_route()
         for node in route:
-            print(node[0].data[0])
             node = node[0]
             if node.left and node.right:
                 if node.right.left and node.right.left.data is not None:
-                    print(f"left {node.right.left}")
-                    print(f"left {node.right.left.data}")
+                    #print(f"left {node.right.left}")
+                    #print(f"left {node.right.left.data}")
                     left = node.right.left
                     left_shape = self.nodes[left.data[0]]
                     # self.canvas.itemconfig(left_shape.shape_id, fill='red')
-                    print()
+                    #print()
                     # for i in binary_search_tree.preorder_route(left):
                     #     self.canvas.move(self.nodes[i[0].data[0]].shape_id, -NodeShape.size * 2, 0)
                     #return
                 if node.left.right and node.left.right.data is not None:
-                    print(f"right {node.left.right}")
-                    print(f"right {node.left.right.data}")
+                    #print(f"right {node.left.right}")
+                    #print(f"right {node.left.right.data}")
                     right = node.left.right
                     right_shape = self.nodes[right.data[0]]
                     # self.canvas.itemconfig(right_shape.shape_id, fill='green')
@@ -158,6 +158,8 @@ class GraphPainter:
         print(len(self.selected))
         for node in self.selected:
             self.remove_node(node)
+        canvas.delete('all')
+        draw_bst(binary_search_tree)
 
     def update_graph(self, bst):
         traversal = bst.preorder_route()
